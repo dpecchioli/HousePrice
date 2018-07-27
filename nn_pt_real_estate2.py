@@ -1,9 +1,49 @@
 import csv
 import torch
 from sklearn.metrics import r2_score
+import pandas as pd
 
 # please use set PYTHONHASHSEED=0 or export PYTHONHASHSEED=0
-# to ensure determinist hash
+# to ensure determinist hash before running !
+
+def hash_9999(str):
+    return hash(str)%9999
+
+def import_df(csvfilename):
+    hash_col = ['MSZoning','Street','Alley','LotShape','LandContour','Utilities','LotConfig','LandSlope','Neighborhood','Condition1','Condition2','BldgType','HouseStyle','RoofStyle','RoofMatl','Exterior1st','Exterior2nd','MasVnrType','MasVnrArea','ExterQual','ExterCond','Foundation','BsmtQual','BsmtCond','BsmtExposure','BsmtFinType1','BsmtFinSF1','BsmtFinType2','BsmtUnfSF','TotalBsmtSF','Heating','HeatingQC','CentralAir','Electrical','KitchenQual','Functional','FireplaceQu','GarageType','GarageFinish','GarageQual','GarageCond','PavedDrive','PoolQC','Fence','MiscFeature','SaleType','SaleCondition']
+    hash_col = ['MSZoning','LotArea','Street','Alley','LotShape','LandContour','Utilities','LotConfig','LandSlope','Neighborhood','Condition1','Condition2','BldgType','HouseStyle','RoofStyle','RoofMatl','Exterior1st','Exterior2nd','MasVnrType','MasVnrArea','ExterQual','ExterCond','Foundation','BsmtQual','BsmtCond','BsmtExposure','BsmtFinType1','BsmtFinSF1','BsmtFinType2','BsmtFinSF2','BsmtUnfSF','TotalBsmtSF','Heating','HeatingQC','CentralAir','Electrical','1stFlrSF','2ndFlrSF','LowQualFinSF','GrLivArea','BsmtFullBath','BsmtHalfBath','FullBath','HalfBath','BedroomAbvGr','KitchenAbvGr','KitchenQual','TotRmsAbvGrd','Functional','Fireplaces','FireplaceQu','GarageType','GarageYrBlt','GarageFinish','GarageCars','GarageArea','GarageQual','GarageCond','PavedDrive','WoodDeckSF','OpenPorchSF','EnclosedPorch','3SsnPorch','ScreenPorch','PoolArea','PoolQC','Fence','MiscFeature','MiscVal','MoSold','YrSold','SaleType','SaleCondition']
+    X = pd.read_csv(csvfilename)
+    for to_hash in hash_col:
+        X[to_hash] = X[to_hash].apply(hash_9999)
+    X['LotFrontage'] = X['LotFrontage'].apply(lambda x : x if pd.notnull(x) else 70)
+    Y = X[['SalePrice']]
+    X = X.drop('SalePrice',1)
+    return X,Y
+
+def plot_data(X,Y):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from scipy.stats import norm, skew #for some statistics
+    from scipy import stats
+    color = sns.color_palette()
+    sns.set_style('darkgrid')
+
+    sns.distplot(Y['SalePrice'] , fit=norm);
+
+    # Get the fitted parameters used by the function
+    mu, sigma = norm.fit(Y['SalePrice'])
+    #print( '\n mu = {:.2f} and sigma = {:.2f}\n'.format(mu, sigma))
+
+    #Now plot the distribution
+    plt.legend(['Normal dist. ($\mu=$ {:.2f} and $\sigma=$ {:.2f} )'.format(mu, sigma)],
+                loc='best')
+    plt.ylabel('Frequency')
+    plt.title('SalePrice distribution')
+
+    #Get also the QQ-plot
+    fig = plt.figure()
+    res = stats.probplot(Y['SalePrice'], plot=plt)
+    plt.show()
 
 def gradient_explore(x,y,w1,w2,w3,learning_rate,loop):
     prev_loss = 9e+32
@@ -19,12 +59,7 @@ def gradient_explore(x,y,w1,w2,w3,learning_rate,loop):
         # loss.item() gets the a scalar value held in the loss.
         loss = (y_pred - y).pow(2).sum()
 
-        #if loss < 200e+9:
-        #    learning_rate = 5e-15
-        #elif loss < 300e+9:
-        #    learning_rate = 1e-16
-
-        if t%5000==0:
+        if t%500==0:
             print(t, loss.item()/1e+9)
             if loss > prev_loss:
                 learning_rate /= 1.1
@@ -54,63 +89,33 @@ def gradient_explore(x,y,w1,w2,w3,learning_rate,loop):
             w2.grad.zero_()
             w3.grad.zero_()
 
-    print(y)
-    print(y_pred)
-    print()
-
     return w1,w2,w3,learning_rate,y_pred
 
-hash_col = ['MSZoning','LotArea','Street','Alley','LotShape','LandContour','Utilities','LotConfig','LandSlope','Neighborhood','Condition1','Condition2','BldgType','HouseStyle','RoofStyle','RoofMatl','Exterior1st','Exterior2nd','MasVnrType','MasVnrArea','ExterQual','ExterCond','Foundation','BsmtQual','BsmtCond','BsmtExposure','BsmtFinType1','BsmtFinSF1','BsmtFinType2','BsmtFinSF2','BsmtUnfSF','TotalBsmtSF','Heating','HeatingQC','CentralAir','Electrical','1stFlrSF','2ndFlrSF','LowQualFinSF','GrLivArea','BsmtFullBath','BsmtHalfBath','FullBath','HalfBath','BedroomAbvGr','KitchenAbvGr','KitchenQual','TotRmsAbvGrd','Functional','Fireplaces','FireplaceQu','GarageType','GarageYrBlt','GarageFinish','GarageCars','GarageArea','GarageQual','GarageCond','PavedDrive','WoodDeckSF','OpenPorchSF','EnclosedPorch','3SsnPorch','ScreenPorch','PoolArea','PoolQC','Fence','MiscFeature','MiscVal','MoSold','YrSold','SaleType','SaleCondition']
-cols = ['MSSubClass','MSZoning','LotFrontage','LotArea','Street','Alley','LotShape','LandContour','Utilities','LotConfig','LandSlope','Neighborhood','Condition1','Condition2','BldgType','HouseStyle','OverallQual','OverallCond','YearBuilt','YearRemodAdd','RoofStyle','RoofMatl','Exterior1st','Exterior2nd','MasVnrType','MasVnrArea','ExterQual','ExterCond','Foundation','BsmtQual','BsmtCond','BsmtExposure','BsmtFinType1','BsmtFinSF1','BsmtFinType2','BsmtFinSF2','BsmtUnfSF','TotalBsmtSF','Heating','HeatingQC','CentralAir','Electrical','1stFlrSF','2ndFlrSF','LowQualFinSF','GrLivArea','BsmtFullBath','BsmtHalfBath','FullBath','HalfBath','BedroomAbvGr','KitchenAbvGr','KitchenQual','TotRmsAbvGrd','Functional','Fireplaces','FireplaceQu','GarageType','GarageYrBlt','GarageFinish','GarageCars','GarageArea','GarageQual','GarageCond','PavedDrive','WoodDeckSF','OpenPorchSF','EnclosedPorch','3SsnPorch','ScreenPorch','PoolArea','PoolQC','Fence','MiscFeature','MiscVal','MoSold','YrSold','SaleType','SaleCondition']
 
-FEATURES = len(cols) # remove last column ie y
+train,Y = import_df('data/train.csv')
+train.insert(0, 'Beta0', 1)
 
-row_x = []
-row_y = []
-with open('data/train.csv', newline='') as csvfile:
-    reader = csv.DictReader(csvfile)
-    csvfile.seek(0)
-    data = {}
-    for row in reader:
-        x_line = [1] # adding bias column
-        for col in cols:
-            #print(col)
-            if col in hash_col:
-                val = hash(row[col])%9999
-                x_line.append(val)
-            else:
-                if row[col] == 'NA':
-                    if col=='LotFrontage':
-                        x_line.append(70)
-                    else:
-                        print('ERROR')
-                        exit()
-                else:
-                    x_line.append(int(row[col]))
-
-        row_x.append(x_line)
-        row_y.append([int(row['SalePrice'])])
-
+plot_data(train,Y)
 
 dtype = torch.float
 device = torch.device("cpu")
-device = torch.device("cuda:0") # Uncomment this to run on GPU
+#device = torch.device("cuda:0") # Uncomment this to run on GPU
 
 # Create random Tensors to hold input and outputs.
 # Setting requires_grad=False indicates that we do not need to compute gradients
 # with respect to these Tensors during the backward pass.
-x = torch.tensor(row_x,device=device,dtype=dtype)
-y = torch.tensor(row_y,device=device,dtype=dtype)
+x = torch.tensor(train.values,device=device,dtype=dtype)
+y = torch.tensor(Y.values,device=device,dtype=dtype)
 
 # Create random Tensors for weights.
 # Setting requires_grad=True indicates that we want to compute gradients with
 # respect to these Tensors during the backward pass.
-w1 = torch.randn(FEATURES+1, 60, device=device, dtype=dtype, requires_grad=True)
+w1 = torch.randn(x.shape[1], 60, device=device, dtype=dtype, requires_grad=True)
 w2 = torch.randn(60, 30, device=device, dtype=dtype, requires_grad=True)
 w3 = torch.randn(30, 1, device=device, dtype=dtype, requires_grad=True)
 
 
-learning_rate = 1e-15
+learning_rate = 1e-16
 loop = 5000
 
 w1,w2,w3,learning_rate,y_pred = gradient_explore(x,y,w1,w2,w3,learning_rate,loop)
@@ -122,7 +127,11 @@ while end == False:
         for el in y_pred:
             print(int(el))
         end = True
-    if value != "N" and value !="n":
+        torch.save(w1, 'w1.torch')
+        torch.save(w2, 'w2.torch')
+        torch.save(w3, 'w3.torch')
+        print("w1 w2 w3 saved")
+    else:
         lrate_needed = input("learning_rate "+str(learning_rate)+" ?")
         if lrate_needed != "":
             learning_rate = float(lrate_needed)
