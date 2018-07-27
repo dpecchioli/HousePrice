@@ -1,4 +1,5 @@
-# HousePrice
-Neural network model using PyTorch
+# HousePrice Non Linear Regression
+Experimenting Neural network model using PyTorch.
+nn_pt_real_estate2 uses 2 hidden layers neural network and can fit train model with a square loss < 0.5 billion dollars (for 1460 lines). 
 
-Data based on https://www.kaggle.com/c/house-prices-advanced-regression-techniques dataset
+Data is based on https://www.kaggle.com/c/house-prices-advanced-regression-techniques dataset
